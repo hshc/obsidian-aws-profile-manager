@@ -18,7 +18,12 @@
 		"builtin-modules": "3.3.0",
 		"esbuild": "0.17.3",
 		"obsidian": "latest",
+		"os": "latest",
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
+	},
+	"dependencies": {
+		"os": "^0.1.2",
+		"aws-profile-handler": "git://github.com/rmtuckerphx/aws-profile-handler.git"
 	}
 }
