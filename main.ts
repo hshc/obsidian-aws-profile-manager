@@ -7,46 +7,6 @@ import * as profileHandler from 'aws-profile-handler';
 const Ini = require('./node_modules/aws-profile-handler/lib/ini');
 const Utils = require('./node_modules/aws-profile-handler/lib/utils');
 
-
-/*
-var f = function() {
-	this.helloIn = function() {
-		alert('helloInF');
-	};	
-}
-f.prototype.hello = function() {
-	alert('hello');
-}
-
-var g = function(){
-	this.helloIn = function() {
-		alert('helloInG');
-	};
-}
-g.prototype = new f(); 
-g.prototype.coucou = function(){
-	alert('coucou'); 
-}
-
-var o = new g(); 
-o.coucou(); // affiche coucou
-o.hello();  // affiche hello
-o.helloIn(); // affiche helloInG
-o.__proto__.helloIn(); // affiche helloInF
-o.coucou = function() {
-	alert('coucouOut');	
-};
-o.coucou(); //affiche coucouOut
-// o.prototype.helloIn = function() { // CRAAAAAASHHHHHHHH type(o) != f(), == g
-// 	alert('helloInO');
-// }
-// o.helloIn(); //affiche helloInO
-// o.__proto__.helloIn(); //affiche helloIn?
-
-// qd on travaille sur les fonctions ou classes, on reference le prototype avec ".prototype", mais qd on est sur
-// l'objet lui meme (cad l'instance de la fonction ou classe), on utilise ".__proto__" pour appeler les fonction des prototypes parents
-*/
-
 const defaultFilePath = path.join(os.homedir(), '.aws', 'credentials');
 // Remember to rename these classes and interfaces!
 function addProfile(profile: string, credentials: Object, filePath ?: string) {
