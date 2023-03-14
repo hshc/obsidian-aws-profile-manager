@@ -119,7 +119,8 @@ export function getSortedProfilesCredentials(includeDefaultProfile = true) {
 // 	}
 // }
 
-const sortedProfilesCreds = getSortedProfilesCredentials(); 
+const sortedProfilesCreds = getSortedProfilesCredentials(false); 
+const originProfile = (<Record<string,string>>profileHandler.getProfileCredentials(DEFAULT_PROFILE))?.originProfile;
 
 export class SuggestAwsProfileModal extends SuggestModal<String> {
 
@@ -139,7 +140,8 @@ export class SuggestAwsProfileModal extends SuggestModal<String> {
 
 	// Perform action on the selected suggestion.
 	onChooseSuggestion(profile: string, evt: MouseEvent | KeyboardEvent) {
-		let profileCreds = profileHandler.getProfileCredentials(profile);
+		let profileCreds = <Record<string,string>>profileHandler.getProfileCredentials(profile);
+		profileCreds["originProfile"] = profile;
 		addProfile("default", profileCreds);
 		new Notice(`New default profile is '${profile}'`);
 		let items = document.getElementsByClassName("status-bar-item plugin-obsidian-aws-profile-manager");
@@ -157,7 +159,11 @@ export default class AwsProfileManagerPlugin extends Plugin {
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const item = this.addStatusBarItem();
 		item.createEl("span", { text: "🎭" });
-		item.createEl("span", { text: "Choose a profile" });
+		if (originProfile == null) {
+			item.createEl("span", { text: "Choose a profile" });
+		} else {
+			item.createEl("span", { text: originProfile });
+		}
 
 		this.addCommand({
 			id: "switch profile",
