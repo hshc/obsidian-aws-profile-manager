@@ -1,12 +1,16 @@
-import { App, Editor, MarkdownView, Modal, Notice, addIcon, setIcon, Plugin, PluginSettingTab, Setting, SuggestModal } from 'obsidian';
+import * as profileHandler from 'aws-profile-handler';
+import * as fs from 'fs';
+import { addIcon, App, Notice, Plugin, PluginSettingTab, Setting, SuggestModal } from 'obsidian';
 import * as os from 'os';
 import * as path from 'path';
-import * as fs from 'fs';
-import * as profileHandler from 'aws-profile-handler';
 // import {Ini, Utils} from 'aws-profile-handler';
 
 interface AwsProfileManagerSettings {
+	// #region Properties (1)
+
 	mySetting: string;
+
+	// #endregion Properties (1)
 }
 
 const Ini = require('./node_modules/aws-profile-handler/lib/ini');
@@ -42,15 +46,12 @@ function addProfile(profile: string, credentials: Object, filePath ?: string) {
 	Utils.writeFile(credentialPath, encodedProfile);
 }
 
-
-
 // list and order in an array all the profiles that are available in the .aws/credentials file
 export function getSortedProfilesCredentials(includeDefaultProfile = true) {
 	const credentialsFile = path.join(os.homedir(), '.aws', 'credentials');
 	let result = [];
 
 	if (fs.existsSync(credentialsFile)) {
-
 		// listProfile will check if file is valid. If it's not valid,
 		// no need to proceed, just callback the error.
 		try {
@@ -71,7 +72,6 @@ export function getSortedProfilesCredentials(includeDefaultProfile = true) {
 			console.log(`File '${credentialsFile}' is not valid.`);
 			console.log(error);
 		}
-
 	}
 	else {
 		console.log(`File '${credentialsFile}' does not exist.`);
@@ -79,7 +79,6 @@ export function getSortedProfilesCredentials(includeDefaultProfile = true) {
 
 	return result;
 }
-
 
 // export class ExampleModal_1 extends Modal {
 // 	result: string;
@@ -123,9 +122,10 @@ const sortedProfilesCreds = getSortedProfilesCredentials(false);
 const originProfile = (<Record<string,string>>profileHandler.getProfileCredentials(DEFAULT_PROFILE))?.originProfile;
 
 export class SuggestAwsProfileModal extends SuggestModal<String> {
+	// #region Public Methods (3)
 
 	// Returns all available suggestions.
-	getSuggestions(query: string): String[] {
+	public getSuggestions(query: string): String[] {
 		let localsortedProfilesCreds = sortedProfilesCreds;
 		let choice = localsortedProfilesCreds.filter((profile: string) =>
 			profile.toLowerCase().includes(query.toLowerCase())
@@ -133,13 +133,8 @@ export class SuggestAwsProfileModal extends SuggestModal<String> {
 		return choice
 	}
 
-	// Renders each suggestion item.
-	renderSuggestion(profile: string, el: HTMLElement) {
-		el.createEl("div", { text: profile });
-	}
-
 	// Perform action on the selected suggestion.
-	onChooseSuggestion(profile: string, evt: MouseEvent | KeyboardEvent) {
+	public onChooseSuggestion(profile: string, evt: MouseEvent | KeyboardEvent) {
 		let profileCreds = <Record<string,string>>profileHandler.getProfileCredentials(profile);
 		profileCreds["originProfile"] = profile;
 		addProfile("default", profileCreds);
@@ -149,12 +144,50 @@ export class SuggestAwsProfileModal extends SuggestModal<String> {
 		items[0].createEl("span", { text: "🎭" });
 		items[0].createEl("span", { text: profile });
 	}
+
+	// Renders each suggestion item.
+	public renderSuggestion(profile: string, el: HTMLElement) {
+		el.createEl("div", { text: profile });
+	}
+
+	// #endregion Public Methods (3)
 }
 
 export default class AwsProfileManagerPlugin extends Plugin {
-	settings: AwsProfileManagerSettings;
-	statusBarItemEl: HTMLElement;
+	// #region Properties (2)
 
+	public settings: AwsProfileManagerSettings;
+	public statusBarItemEl: HTMLElement;
+
+	// #endregion Properties (2)
+	private cmdSwitchProfile(app) {
+		function closure() {
+			console.log("Hey, you! "+os.homedir());
+			new SuggestAwsProfileModal(app).open();
+		}
+		return closure;
+	}
+
+	private cmdFlushProfile() {
+		console.log(`Hey, you! ${os.homedir()}, ready for flushing default credential !`);
+		let inProfilesArray = Ini.decodeIniData(Utils.readFile(defaultFilePath));
+		var profilesMap = new Map(Object.entries(inProfilesArray));
+		let outProfilesArray = {};
+		profilesMap.forEach((key, value) => {
+			if (value != "default") {
+				outProfilesArray[value] = key;
+			}
+		});
+		
+		let encodedProfile = Ini.encodeIniFormat(outProfilesArray);
+		Utils.writeFile(defaultFilePath, encodedProfile);
+		
+		let items = document.getElementsByClassName("status-bar-item plugin-obsidian-aws-profile-manager");
+		items[0].innerHTML = "";
+		items[0].createEl("span", { text: "🎭" });
+		items[0].createEl("span", { text: "Choose a profile" });
+		console.log(`File ${defaultFilePath} has been flushed`);
+	}
 	async onload() {
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const item = this.addStatusBarItem();
@@ -168,11 +201,12 @@ export default class AwsProfileManagerPlugin extends Plugin {
 		this.addCommand({
 			id: "switch profile",
 			name: "Switch to AWS profile",
-			callback: () => {
-				console.log("Hey, you! "+os.homedir());
-				new SuggestAwsProfileModal(this.app).open();
-			},
-			
+			callback: this.cmdSwitchProfile(this.app),
+		});
+		this.addCommand({
+			id: "flush default profile",
+			name: "Flush the default AWS profile from the user credentials",
+			callback: this.cmdFlushProfile,
 		});
 
 		await this.loadSettings();
@@ -187,7 +221,6 @@ export default class AwsProfileManagerPlugin extends Plugin {
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
-
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new AwsProfileManagerSettingTab(this.app, this));
@@ -216,14 +249,24 @@ export default class AwsProfileManagerPlugin extends Plugin {
 }
 
 class AwsProfileManagerSettingTab extends PluginSettingTab {
-	plugin: AwsProfileManagerPlugin;
+	// #region Properties (1)
+
+	public plugin: AwsProfileManagerPlugin;
+
+	// #endregion Properties (1)
+
+	// #region Constructors (1)
 
 	constructor(app: App, plugin: AwsProfileManagerPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
-	display(): void {
+	// #endregion Constructors (1)
+
+	// #region Public Methods (1)
+
+	public display(): void {
 		const {containerEl} = this;
 
 		containerEl.empty();
@@ -242,4 +285,6 @@ class AwsProfileManagerSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 	}
+
+	// #endregion Public Methods (1)
 }
